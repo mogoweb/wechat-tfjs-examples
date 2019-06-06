@@ -1,0 +1,8 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="button">
+    <view class="button-text" bindtap="goGettingStarted">
+      <text>起步示例</text>
+    </view>
+  </view>
+</view>
