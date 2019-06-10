@@ -11,5 +11,10 @@ Page({
     wx.navigateTo({
       url: '../getting-started/index'
     })
+  },
+  goMobilenet: function () {
+    wx.navigateTo({
+      url: '../mobilenet/mobilenet'
+    })
   }
 })

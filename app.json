@@ -2,7 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/logs/logs",
-    "pages/getting-started/index"
+    "pages/getting-started/index",
+    "pages/mobilenet/mobilenet"
   ],
   "window": {
     "backgroundTextStyle": "light",
