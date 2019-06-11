@@ -13,92 +13,77 @@ const TOPK_PREDICTIONS = 10;
 
 let that;
 let mobilenet;
-const downloadModelManifest = () => {
-  console.log('Downloading mobilenet json...');
 
+function downloadFile(url) {
   return new Promise((resolve, reject) => {
     wx.downloadFile({
-      url: MOBILENET_MODEL_PATH,
-      success: function(res) {
+      url: url,
+      success: function (res) {
         if (res.statusCode === 200) {
           resolve(res.tempFilePath);
+        } else {
+          console.log('downloadFile fail, statusCode is:', res.statusCode);
+          reject(false);
         }
       },
-      fail: function({
+      fail: function ({
         errMsg
       }) {
         console.log('downloadFile fail, err is:', errMsg);
         reject(false);
       }
-    })
-  })
+    });
+  });
 }
 
-const downloadWeights = (json_file) => {
+async function saveToLocal(tempFilePath, destFilePath) {
   return new Promise((resolve, reject) => {
-    // 解析model.json文件
-    let lines = wx.getFileSystemManager().readFileSync(json_file, "utf-8");
-    let json = JSON.parse(lines);
-    let weights_manifest = json.weightsManifest;
+    wx.getFileSystemManager().saveFile({
+      tempFilePath: tempFilePath,
+      filePath: destFilePath,
+      success: (res) => {
+        console.log("save to:" + res.savedFilePath);
+        resolve(res.savedFilePath);
+      },
+      fail: (res) => {
+        reject(res);
+      }
+    });
+  });
+}
 
-    // 下载所有的权重文件，并保存到本地
-    var flag = true;
-    for (let i = 0; i < weights_manifest.length; i++) {
-      let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
-      console.log('Downloading model weight file:' + weight_file);
-      wx.downloadFile({
-        url: weight_file,
-        success: function(res) {
-          if (res.statusCode === 200) {
-            wx.saveFile({
-              tempFilePath: res.tempFilePath,
-              success: (res) => {
-                const savedFilePath = res.savedFilePath
-              },
-              fail: (res) => {
-                flag = false;
-              }
-            });
-          } else {
-            flag = false;
-          }
-        },
-        fail: function({
-          errMsg
-        }) {
-          console.log('downloadFile fail, err is:', errMsg);
-          flag = false;
-        }
-      })
-    }
-    if (flag) {
-      console.log("download all weights success!");
-      // model weights全部保存成功，将model.json文件也保存到本地
-      wx.saveFile({
-        tempFilePath: json_file,
-        success: (res) => {
-          resolve(true);
-        },
-        fail: (res) => {
-          reject(false);
-        }
-      });
-    } else {
-      console.log("download weights failed!");
-      reject(false);
-    }
+const downloadWeights = async (json_file) => {
+  // 解析model.json文件
+  let lines = wx.getFileSystemManager().readFileSync(json_file, "utf-8");
+  let json = JSON.parse(lines);
+  let weights_manifest = json.weightsManifest;
+
+  // 下载所有的权重文件，并保存到本地
+  var downloadList = new Array();
+  for (let i = 0; i < weights_manifest.length; i++) {
+    let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
+    console.log('Downloading model weight file:' + weight_file);
+    downloadList.push(downloadFile(weight_file).then((tempFilePath) => {
+      saveToLocal(tempFilePath, wx.env.USER_DATA_PATH + '/' + weights_manifest[i].paths);
+    }));
+  }
+
+  // 期望所有权重文件都保存到本地成功
+  Promise.all(downloadList).then(() => {
+    console.log("download all weights success!");
+    // model weights全部保存成功，将model.json文件也保存到本地
+    return saveToLocal(json_file, wx.env.USER_DATA_PATH + '/model.json');
   });
 }
 
 const mobilenetDemo = async() => {
   console.log("Downloading model manifest ...");
 
-  let model_json = await downloadModelManifest();
+  // 首先下载model.json
+  let model_json = await downloadFile(MOBILENET_MODEL_PATH);
 
+  // 然后根据模型定义文件下载weights
   let flag = await downloadWeights(model_json);
-
-  console.log(flag);
-
   /*
   console.log('Loading model...');
 
