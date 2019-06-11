@@ -1,6 +1,8 @@
 import * as tf from '../../tfjs/tf.min.js'
 
-import { IMAGENET_CLASSES } from './imagenet_classes';
+import {
+  IMAGENET_CLASSES
+} from './imagenet_classes';
 
 const MOBILENET_MODEL_PATH =
   // tslint:disable-next-line:max-line-length
@@ -11,7 +13,93 @@ const TOPK_PREDICTIONS = 10;
 
 let that;
 let mobilenet;
-const mobilenetDemo = async () => {
+const downloadModelManifest = () => {
+  console.log('Downloading mobilenet json...');
+
+  return new Promise((resolve, reject) => {
+    wx.downloadFile({
+      url: MOBILENET_MODEL_PATH,
+      success: function(res) {
+        if (res.statusCode === 200) {
+          resolve(res.tempFilePath);
+        }
+      },
+      fail: function({
+        errMsg
+      }) {
+        console.log('downloadFile fail, err is:', errMsg);
+        reject(false);
+      }
+    })
+  })
+}
+
+const downloadWeights = (json_file) => {
+  return new Promise((resolve, reject) => {
+    // 解析model.json文件
+    let lines = wx.getFileSystemManager().readFileSync(json_file, "utf-8");
+    let json = JSON.parse(lines);
+    let weights_manifest = json.weightsManifest;
+
+    // 下载所有的权重文件，并保存到本地
+    var flag = true;
+    for (let i = 0; i < weights_manifest.length; i++) {
+      let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
+      console.log('Downloading model weight file:' + weight_file);
+      wx.downloadFile({
+        url: weight_file,
+        success: function(res) {
+          if (res.statusCode === 200) {
+            wx.saveFile({
+              tempFilePath: res.tempFilePath,
+              success: (res) => {
+                const savedFilePath = res.savedFilePath
+              },
+              fail: (res) => {
+                flag = false;
+              }
+            });
+          } else {
+            flag = false;
+          }
+        },
+        fail: function({
+          errMsg
+        }) {
+          console.log('downloadFile fail, err is:', errMsg);
+          flag = false;
+        }
+      })
+    }
+    if (flag) {
+      console.log("download all weights success!");
+      // model weights全部保存成功，将model.json文件也保存到本地
+      wx.saveFile({
+        tempFilePath: json_file,
+        success: (res) => {
+          resolve(true);
+        },
+        fail: (res) => {
+          reject(false);
+        }
+      });
+    } else {
+      console.log("download weights failed!");
+      reject(false);
+    }
+  });
+}
+
+const mobilenetDemo = async() => {
+  console.log("Downloading model manifest ...");
+
+  let model_json = await downloadModelManifest();
+
+  let flag = await downloadWeights(model_json);
+
+  console.log(flag);
+
+  /*
   console.log('Loading model...');
 
   mobilenet = await tf.loadLayersModel(MOBILENET_MODEL_PATH);
@@ -26,10 +114,11 @@ const mobilenetDemo = async () => {
     console.log("getImageData");
     predict(imgData);
   });
+  */
 }
 
 // 获取图像RGB数据
-var getImageData = function (canvasId, imgUrl, callback, imgWidth, imgHeight) {
+var getImageData = function(canvasId, imgUrl, callback, imgWidth, imgHeight) {
   console.log("entering getImageData");
 
   const ctx = wx.createCanvasContext(canvasId);
@@ -50,7 +139,7 @@ var getImageData = function (canvasId, imgUrl, callback, imgWidth, imgHeight) {
         // RGBA to RGB
         var rgbData = new Uint8Array(res.width * res.height * 3);
         let idx = 0;
-        for (let i = 0; i < res.data.length; i +=4) {
+        for (let i = 0; i < res.data.length; i += 4) {
           rgbData[idx] = res.data[i];
           rgbData[idx + 1] = res.data[i + 1];
           rgbData[idx + 2] = res.data[i + 2];
@@ -115,7 +204,7 @@ function showResults(classes) {
     console.log("class:" + classes[i].className + ", probability:" + classes[i].probability.toFixed(3));
     probabilities = probabilities + classes[i].className + ": " + classes[i].probability.toFixed(3) + "\n";
   }
-  
+
   that.setData({
     display: "block",
     probabilities: probabilities,
@@ -133,7 +222,10 @@ export async function getTopKClasses(logits, topK) {
 
   const valuesAndIndices = [];
   for (let i = 0; i < values.length; i++) {
-    valuesAndIndices.push({ value: values[i], index: i });
+    valuesAndIndices.push({
+      value: values[i],
+      index: i
+    });
   }
   valuesAndIndices.sort((a, b) => {
     return b.value - a.value;
@@ -167,7 +259,7 @@ Page({
   /**
    * 生命周期函数--监听页面加载
    */
-  onLoad: function (options) {
+  onLoad: function(options) {
     that = this;
     wx.showLoading({
       title: '正在加载模型...',
@@ -177,11 +269,9 @@ Page({
   /**
    * 生命周期函数--监听页面初次渲染完成
    */
-  onReady: function () {
-  },
+  onReady: function() {},
   /**
    * 生命周期函数--监听页面显示
    */
-  onShow: function () {
-  },
+  onShow: function() {},
 })

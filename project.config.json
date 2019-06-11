@@ -22,7 +22,7 @@
 		}
 	},
 	"compileType": "miniprogram",
-	"libVersion": "2.7.1",
+	"libVersion": "2.6.6",
 	"appid": "wxaf7def9fdb8eb11c",
 	"projectname": "TensorFlow%E7%A4%BA%E4%BE%8B",
 	"debugOptions": {

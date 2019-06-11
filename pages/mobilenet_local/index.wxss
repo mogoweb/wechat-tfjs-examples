@@ -1,4 +1,4 @@
-/* pages/mobilenet/mobilenet.wxss */
+/* pages/mobilenet_local/index.wxss */
 
 .image-container {
   width: 100%;

@@ -3,7 +3,8 @@
     "pages/index/index",
     "pages/logs/logs",
     "pages/getting-started/index",
-    "pages/mobilenet/mobilenet"
+    "pages/mobilenet/mobilenet",
+    "pages/mobilenet_local/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

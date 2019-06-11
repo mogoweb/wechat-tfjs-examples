@@ -16,5 +16,10 @@ Page({
     wx.navigateTo({
       url: '../mobilenet/mobilenet'
     })
+  },
+  goLocalStorage: function () {
+    wx.navigateTo({
+      url: '../mobilenet_local/index'
+    })
   }
 })
