@@ -4,7 +4,8 @@
     "pages/logs/logs",
     "pages/getting-started/index",
     "pages/mobilenet/mobilenet",
-    "pages/mobilenet_local/index"
+    "pages/mobilenet_local/index",
+    "pages/save_local/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

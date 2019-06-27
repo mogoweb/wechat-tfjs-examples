@@ -7,8 +7,12 @@
     <view class="button-text" bindtap="goMobilenet">
       <text>mobilenet示例</text>
     </view>
-    <view class="button-text" bindtap="goLocalStorage">
+    <!--<view class="button-text" bindtap="goLocalStorage">
       <text>模型本地存储示例</text>
+    </view>
+    -->
+    <view class="button-text" bindtap="goSaveLocal">
+      <text>保存模型到文件示例</text>
     </view>
   </view>
 </view>

@@ -1,4 +1,5 @@
-import * as tf from '../../tfjs/tf.min.js'
+import * as tf from '../../tfjs/tf.min.js';
+const md5 = require('../../utils/md5.min.js');
 
 import {
   IMAGENET_CLASSES
@@ -10,6 +11,9 @@ const MOBILENET_MODEL_PATH =
 
 const IMAGE_SIZE = 224;
 const TOPK_PREDICTIONS = 10;
+
+let modelLocalFolder = wx.env.USER_DATA_PATH + '/tfjs_model/';
+let fileManager = wx.getFileSystemManager();
 
 let that;
 let mobilenet;
@@ -38,7 +42,7 @@ function downloadFile(url) {
 
 async function saveToLocal(tempFilePath, destFilePath) {
   return new Promise((resolve, reject) => {
-    wx.getFileSystemManager().saveFile({
+    fileManager.saveFile({
       tempFilePath: tempFilePath,
       filePath: destFilePath,
       success: (res) => {
@@ -54,7 +58,7 @@ async function saveToLocal(tempFilePath, destFilePath) {
 
 const downloadWeights = async (json_file) => {
   // 解析model.json文件
-  let lines = wx.getFileSystemManager().readFileSync(json_file, "utf-8");
+  let lines = fileManager.readFileSync(json_file, "utf-8");
   let json = JSON.parse(lines);
   let weights_manifest = json.weightsManifest;
 
@@ -64,7 +68,7 @@ const downloadWeights = async (json_file) => {
     let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
     console.log('Downloading model weight file:' + weight_file);
     downloadList.push(downloadFile(weight_file).then((tempFilePath) => {
-      saveToLocal(tempFilePath, wx.env.USER_DATA_PATH + '/' + weights_manifest[i].paths);
+      saveToLocal(tempFilePath, modelLocalFolder + weights_manifest[i].paths);
     }));
   }
 
@@ -72,23 +76,65 @@ const downloadWeights = async (json_file) => {
   Promise.all(downloadList).then(() => {
     console.log("download all weights success!");
     // model weights全部保存成功，将model.json文件也保存到本地
-    return saveToLocal(json_file, wx.env.USER_DATA_PATH + '/model.json');
+    return saveToLocal(json_file, modelLocalFolder + 'model.json');
   });
 }
 
 const mobilenetDemo = async() => {
-  console.log("Downloading model manifest ...");
+  // 判断模型是否已经下载
+  try {
+    fileManager.accessSync(modelLocalFolder + 'model.json');
+  } catch (err) {
+    try {
+      fileManager.accessSync(modelLocalFolder);
+    } catch (err) {
+      fileManager.mkdirSync(modelLocalFolder);
+    }
+    console.log("Downloading model manifest ...");
 
-  // 首先下载model.json
-  let model_json = await downloadFile(MOBILENET_MODEL_PATH);
+    // 首先下载model.json
+    let model_json = await downloadFile(MOBILENET_MODEL_PATH);
 
-  // 然后根据模型定义文件下载weights
-  let flag = await downloadWeights(model_json);
+    // 然后根据模型定义文件下载weights
+    await downloadWeights(model_json);
+  }
+
+  // 从本地文件加载模型
+  let files = [];
+  let model_files = [];
+  try {
+    files = fileManager.readdirSync(modelLocalFolder);
+  } catch (err) {
+    console.log(err);
+  }
+
+  let weights_exist = true;
+  if (files.length > 0) {
+    // model.json必须位于第一个
+    model_files.push(modelLocalFolder + 'model.json');
+    // 解析model.json文件
+    let lines = fileManager.readFileSync(model_files[0], "utf-8");
+    let json = JSON.parse(lines);
+    let weights_manifest = json.weightsManifest;
+    for (let i = 0; i < weights_manifest.length; i++) {
+      /*
+      console.log(files.indexOf(weights_manifest[i].paths));
+      if (files.indexOf(weights_manifest[i].paths) < 0) {
+        console.log(weights_manifest[i].paths + " not exists!");
+        weights_exist = false;
+        break;
+      }*/
+      // console.log(weights_manifest[i].paths);
+      // console.log(md5(fileManager.readFileSync(modelLocalFolder + weights_manifest[i].paths)));
+      model_files.push(modelLocalFolder + weights_manifest[i].paths);
+    }
+  }
+  if (weights_exist) {
+    mobilenet = await tf.loadLayersModel(tf.io.mpFiles(model_files));
+  } else {
+    mobilenet = await tf.loadLayersModel(MOBILENET_MODEL_PATH);
+  }
   /*
-  console.log('Loading model...');
-
-  mobilenet = await tf.loadLayersModel(MOBILENET_MODEL_PATH);
-
   // Warmup the model. This isn't necessary, but makes the first prediction
   // faster. Call `dispose` to release the WebGL memory allocated for the return
   // value of `predict`.

@@ -21,5 +21,10 @@ Page({
     wx.navigateTo({
       url: '../mobilenet_local/index'
     })
+  },
+  goSaveLocal: function () {
+    wx.navigateTo({
+      url: '../save_local/index'
+    })
   }
 })
