@@ -40,7 +40,7 @@ function downloadFile(url) {
   });
 }
 
-async function saveToLocal(tempFilePath, destFilePath) {
+function saveToLocal(tempFilePath, destFilePath) {
   return new Promise((resolve, reject) => {
     fileManager.saveFile({
       tempFilePath: tempFilePath,
@@ -56,31 +56,78 @@ async function saveToLocal(tempFilePath, destFilePath) {
   });
 }
 
-const downloadWeights = async (json_file) => {
-  // 解析model.json文件
-  let lines = fileManager.readFileSync(json_file, "utf-8");
-  let json = JSON.parse(lines);
-  let weights_manifest = json.weightsManifest;
+function downloadWeights(json_file) {
+  return new Promise((resolve, reject) => {
+    // 解析model.json文件
+    let lines = fileManager.readFileSync(json_file, "utf-8");
+    let json = JSON.parse(lines);
+    let weights_manifest = json.weightsManifest;
 
-  // 下载所有的权重文件，并保存到本地
-  var downloadList = new Array();
-  for (let i = 0; i < weights_manifest.length; i++) {
-    let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
-    console.log('Downloading model weight file:' + weight_file);
-    downloadList.push(downloadFile(weight_file).then((tempFilePath) => {
-      saveToLocal(tempFilePath, modelLocalFolder + weights_manifest[i].paths);
-    }));
-  }
+    // 下载所有的权重文件，并保存到本地
+    var downloadList = new Array();
+    for (let i = 0; i < weights_manifest.length; i++) {
+      let weight_file = MOBILENET_MODEL_PATH.substring(0, MOBILENET_MODEL_PATH.lastIndexOf("/") + 1) + weights_manifest[i].paths;
+      console.log('Downloading model weight file:' + weight_file);
+      downloadList.push(downloadFile(weight_file).then((tempFilePath) => {
+        return saveToLocal(tempFilePath, modelLocalFolder + weights_manifest[i].paths);
+      }));
+    }
 
-  // 期望所有权重文件都保存到本地成功
-  Promise.all(downloadList).then(() => {
-    console.log("download all weights success!");
-    // model weights全部保存成功，将model.json文件也保存到本地
-    return saveToLocal(json_file, modelLocalFolder + 'model.json');
+    // 期望所有权重文件都保存到本地成功
+    Promise.all(downloadList).then(() => {
+      console.log("download all weights success!");
+      // model weights全部保存成功，将model.json文件也保存到本地
+      saveToLocal(json_file, modelLocalFolder + 'model.json').then(() => {
+        resolve(json_file);
+      }).catch(() => {
+        reject(json_file);
+      });
+    });
+  });
+}
+
+function loadModelFromLocal(localFolder) {
+  return new Promise((resolve, reject) => {
+    // 从本地文件加载模型
+    let files = [];
+    let model_files = [];
+    console.log('readdirSync');
+    try {
+      files = fileManager.readdirSync(localFolder);
+    } catch (err) {
+      console.log(err);
+    }
+    console.log(files.length);
+
+    let weights_exist = true;
+    if (files.length > 0) {
+      // model.json必须位于第一个
+      model_files.push(localFolder + 'model.json');
+      // 解析model.json文件
+      let lines = fileManager.readFileSync(model_files[0], "utf-8");
+      let json = JSON.parse(lines);
+      let weights_manifest = json.weightsManifest;
+      for (let i = 0; i < weights_manifest.length; i++) {
+        if (files.indexOf(weights_manifest[i].paths.toString()) < 0) {
+          console.log(weights_manifest[i].paths + " not exists!");
+          weights_exist = false;
+          break;
+        }
+        // console.log(weights_manifest[i].paths);
+        // console.log(md5(fileManager.readFileSync(modelLocalFolder + weights_manifest[i].paths)));
+        model_files.push(localFolder + weights_manifest[i].paths);
+      }
+    }
+    if (weights_exist) {
+      resolve(tf.loadLayersModel(tf.io.mpFiles(model_files)));
+    } else {
+      resolve(tf.loadLayersModel(MOBILENET_MODEL_PATH));
+    }
   });
 }
 
 const mobilenetDemo = async() => {
+
   // 判断模型是否已经下载
   try {
     fileManager.accessSync(modelLocalFolder + 'model.json');
@@ -99,53 +146,20 @@ const mobilenetDemo = async() => {
     await downloadWeights(model_json);
   }
 
-  // 从本地文件加载模型
-  let files = [];
-  let model_files = [];
-  try {
-    files = fileManager.readdirSync(modelLocalFolder);
-  } catch (err) {
-    console.log(err);
-  }
-
-  let weights_exist = true;
-  if (files.length > 0) {
-    // model.json必须位于第一个
-    model_files.push(modelLocalFolder + 'model.json');
-    // 解析model.json文件
-    let lines = fileManager.readFileSync(model_files[0], "utf-8");
-    let json = JSON.parse(lines);
-    let weights_manifest = json.weightsManifest;
-    for (let i = 0; i < weights_manifest.length; i++) {
-      /*
-      console.log(files.indexOf(weights_manifest[i].paths));
-      if (files.indexOf(weights_manifest[i].paths) < 0) {
-        console.log(weights_manifest[i].paths + " not exists!");
-        weights_exist = false;
-        break;
-      }*/
-      // console.log(weights_manifest[i].paths);
-      // console.log(md5(fileManager.readFileSync(modelLocalFolder + weights_manifest[i].paths)));
-      model_files.push(modelLocalFolder + weights_manifest[i].paths);
-    }
-  }
-  if (weights_exist) {
-    mobilenet = await tf.loadLayersModel(tf.io.mpFiles(model_files));
-  } else {
-    mobilenet = await tf.loadLayersModel(MOBILENET_MODEL_PATH);
-  }
-  /*
   // Warmup the model. This isn't necessary, but makes the first prediction
   // faster. Call `dispose` to release the WebGL memory allocated for the return
   // value of `predict`.
-  mobilenet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
+  
+  loadModelFromLocal(modelLocalFolder).then((model) => {
+    mobilenet = model;
+    mobilenet.predict(tf.zeros([1, IMAGE_SIZE, IMAGE_SIZE, 3])).dispose();
 
-  getImageData('mobileCanvas', 'cat.jpg', function (imgData) {
-    //  在此处得到的RGB数据
-    console.log("getImageData");
-    predict(imgData);
+    getImageData('mobileCanvas', 'cat.jpg', function (imgData) {
+      //  在此处得到的RGB数据
+      console.log("getImageData");
+      predict(imgData);
+    });
   });
-  */
 }
 
 // 获取图像RGB数据
