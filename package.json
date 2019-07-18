@@ -1,0 +1,21 @@
+{
+  "name": "tfjs-owechat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "typescript": "^3.3.3333",
+    "miniprogram-api-typings": "^2.6.5-2"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-core": "1.2.2",
+    "@tensorflow/tfjs-converter": "1.2.2",
+    "@tensorflow/tfjs-layers": "1.2.2",
+    "fetch-wechat": "0.0.3"
+  }
+}

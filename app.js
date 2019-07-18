@@ -1,6 +1,17 @@
+const fetchWechat = require('fetch-wechat');
+import * as tf from '@tensorflow/tfjs-core';
+
+const plugin = requirePlugin('tfjsPlugin');
+const ENABLE_DEBUG = true;
+
 //app.js
 App({
   onLaunch: function () {
+    plugin.configPlugin({
+      fetchFunc: fetchWechat.fetchFunc(),
+      tf, canvas: wx.createOffscreenCanvas()
+    }, ENABLE_DEBUG);
+    
     // 展示本地存储能力
     var logs = wx.getStorageSync('logs') || []
     logs.unshift(Date.now())

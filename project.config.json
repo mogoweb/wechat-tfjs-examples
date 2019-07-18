@@ -6,11 +6,11 @@
 	"setting": {
 		"urlCheck": false,
 		"es6": true,
-		"enhance": true,
 		"postcss": true,
 		"minified": true,
 		"newFeature": true,
 		"coverView": true,
+		"nodeModules": true,
 		"autoAudits": false,
 		"checkInvalidKey": true,
 		"checkSiteMap": true,
@@ -22,9 +22,9 @@
 		}
 	},
 	"compileType": "miniprogram",
-	"libVersion": "2.6.6",
+	"libVersion": "2.7.5",
 	"appid": "wxaf7def9fdb8eb11c",
-	"projectname": "TensorFlow%E7%A4%BA%E4%BE%8B",
+	"projectname": "tfjs-owechat",
 	"debugOptions": {
 		"hidedInDevtools": []
 	},

@@ -1,5 +1,4 @@
 /**index.wxss**/
-
 .button {
   height: auto;
   padding: 0 0 0 40rpx;

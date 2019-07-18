@@ -2,10 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/logs/logs",
-    "pages/getting-started/index",
-    "pages/mobilenet/mobilenet",
-    "pages/mobilenet_local/index",
-    "pages/save_local/index"
+    "pages/getting-started/index"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -13,5 +10,11 @@
     "navigationBarTitleText": "WeChat",
     "navigationBarTextStyle": "black"
   },
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "plugins": {
+    "tfjsPlugin": {
+      "version": "0.0.5",
+      "provider": "wx6afed118d9e81df9"
+    }
+  }
 }

@@ -7,24 +7,9 @@ Page({
   },
   onLoad: function () {
   },
-  goGettingStarted: function() {
+  goGettingStarted: function () {
     wx.navigateTo({
       url: '../getting-started/index'
-    })
-  },
-  goMobilenet: function () {
-    wx.navigateTo({
-      url: '../mobilenet/mobilenet'
-    })
-  },
-  goLocalStorage: function () {
-    wx.navigateTo({
-      url: '../mobilenet_local/index'
-    })
-  },
-  goSaveLocal: function () {
-    wx.navigateTo({
-      url: '../save_local/index'
     })
   }
 })
