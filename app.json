@@ -5,7 +5,9 @@
     "pages/getting-started/index",
     "pages/mobilenet/mobilenet",
     "pages/mobilenet_local/index",
-    "pages/save_local/index"
+    "pages/save_local/index",
+    "pages/mnist/index.wxml",
+    "pages/mnist/index"
   ],
   "window": {
     "backgroundTextStyle": "light",

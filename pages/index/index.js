@@ -12,6 +12,11 @@ Page({
       url: '../getting-started/index'
     })
   },
+  goMnist: function () {
+    wx.navigateTo({
+      url: '../mnist/index'
+    })
+  },
   goMobilenet: function () {
     wx.navigateTo({
       url: '../mobilenet/mobilenet'

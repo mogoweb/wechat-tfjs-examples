@@ -4,6 +4,9 @@
     <view class="button-text" bindtap="goGettingStarted">
       <text>起步示例</text>
     </view>
+    <view class="button-text" bindtap="goMnist">
+      <text>手写数字识别</text>
+    </view>
     <view class="button-text" bindtap="goMobilenet">
       <text>mobilenet示例</text>
     </view>
